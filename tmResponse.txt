@@ -1,0 +1,9 @@
+{
+  "_links":  {
+    ...
+  },
+  "_embedded":  {
+    "events":  [
+       {
+        "name": "WGC Cadillac Championship - Sunday Ticket",
+        "type": "event",
