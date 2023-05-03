@@ -38,6 +38,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.text.Text;
 
 /**
  * REPLACE WITH NON-SHOUTING DESCRIPTION OF YOUR APP.
@@ -66,7 +67,7 @@ public class ApiApp extends Application {
 
     /** TicketMaster API Key. */
     private static final String configPath = "resources/config.properties";
-    private static final String TMASTER_KEY = loadAPIKey();
+    private static final String TMASTER_KEY = loadTicketMasterAPIKey();
 
     /** Wikipedia URI */
     private static final String WIKI_API = "http://en.wikipedia.org/w/api.php" +
@@ -87,9 +88,13 @@ public class ApiApp extends Application {
     private HBox mainContent;
     private VBox leftSide;
     private VBox eventsHolder;
-    private Label[] eventsDisplayed;
+    private Button[] eventsDisplayed;
     private VBox rightSide;
-    private TextFlow wikiTextFlow;
+    private Text defaultText;
+    private String title;
+    private String descrip;
+    private TextField urlField;
+    private TextFlow tFLow;
     private String[] eventList;
     private String uriToPassIn;
 
@@ -103,8 +108,8 @@ public class ApiApp extends Application {
         root = new VBox(5);
         logoFrame = new ImageView();
         logo = new Image(T_MASTER);
-        appDescrip = new Label("Enter a city and click on the button below to retreive five events, " +
-        "click on the event to retrieve a relevant news article");
+        appDescrip = new Label("Enter a city and click on the button " +
+        "below to retreive five events, click on the event to retrieve a relevant news article");
         searchbar = new HBox(5);
         textbox = new TextField("");
         getEvents = new Button("Get Events!");
@@ -113,10 +118,14 @@ public class ApiApp extends Application {
         infoLabel = new Label("News Article on Event: ");
         mainContent = new HBox(5);
         leftSide = new VBox(5);
-        eventsHolder = new VBox(5);
-        eventsDisplayed = new Label[5];
+        eventsHolder = new VBox(15);
+        eventsDisplayed = new Button[5];
         rightSide = new VBox(5);
-        wikiTextFlow = new TextFlow();
+        title = "Title:";
+        descrip = "Description:";
+        urlField = new TextField("url...");
+        defaultText = new Text("Title:" + "\n\n" + "Description:" );
+        tFLow = new TextFlow(defaultText);
         eventList = new String[200];
     } // ApiApp
 
@@ -130,11 +139,13 @@ public class ApiApp extends Application {
         mainContent.getChildren().addAll(leftSide, rightSide);
         leftSide.getChildren().addAll(eventsLabel, eventsHolder);
         for (int i = 0; i < eventsDisplayed.length; i++) {
-            eventsDisplayed[i] = new Label();
+            eventsDisplayed[i] = new Button();
             eventsHolder.getChildren().add(eventsDisplayed[i]);
         }
         eventsDisplayed[0].setText("No events yet...");
-        rightSide.getChildren().addAll(infoLabel, wikiTextFlow);
+        rightSide.getChildren().addAll(infoLabel, tFLow, urlField);
+        urlField.setEditable(false);
+        rightSide.setVgrow(tFLow, Priority.ALWAYS);
 
         // initializing root
         root.setAlignment(Pos.CENTER);
@@ -192,7 +203,7 @@ public class ApiApp extends Application {
     /**
      * Method to load properties.
      */
-    private static String loadAPIKey () {
+    private static String loadTicketMasterAPIKey () {
         try (FileInputStream configFileStream = new FileInputStream(configPath)) {
             Properties config = new Properties();
             config.load(configFileStream);
@@ -236,7 +247,7 @@ public class ApiApp extends Application {
             eventList = filter(tmResponse.embedded.events);
             for (int i = 0; i < eventsDisplayed.length; i++) {
                 final String eventName = eventList[(int)(Math.random() * eventList.length)];
-                final Label eventLabel = eventsDisplayed[i];
+                final Button eventLabel = eventsDisplayed[i];
                 Runnable task = () -> eventLabel.setText(eventName);
                 Platform.runLater(task);
             }
