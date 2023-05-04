@@ -123,7 +123,7 @@ public class ApiApp extends Application {
         rightSide = new VBox(5);
         title = "Title:";
         descrip = "Description:";
-        urlField = new TextField("url...");
+        urlField = new TextField("Web Address");
         defaultText = new Text("Title:" + "\n\n" + "Description:" );
         tFLow = new TextFlow(defaultText);
         eventList = new String[200];
@@ -139,13 +139,17 @@ public class ApiApp extends Application {
         mainContent.getChildren().addAll(leftSide, rightSide);
         leftSide.getChildren().addAll(eventsLabel, eventsHolder);
         for (int i = 0; i < eventsDisplayed.length; i++) {
-            eventsDisplayed[i] = new Button();
+            eventsDisplayed[i] = new Button("...");
+            eventsDisplayed[i].setBackground(new Background(
+                new BackgroundFill(Color.ORANGE, CornerRadii.EMPTY, Insets.EMPTY)));
             eventsHolder.getChildren().add(eventsDisplayed[i]);
         }
         eventsDisplayed[0].setText("No events yet...");
         rightSide.getChildren().addAll(infoLabel, tFLow, urlField);
         urlField.setEditable(false);
+        urlField.setAlignment(Pos.CENTER);
         rightSide.setVgrow(tFLow, Priority.ALWAYS);
+        eventsHolder.setAlignment(Pos.CENTER);
 
         // initializing root
         root.setAlignment(Pos.CENTER);
