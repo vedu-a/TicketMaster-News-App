@@ -37,8 +37,12 @@ import javafx.scene.layout.BackgroundFill;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Alert;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.text.Text;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 
 /**
  * REPLACE WITH NON-SHOUTING DESCRIPTION OF YOUR APP.
@@ -67,11 +71,13 @@ public class ApiApp extends Application {
 
     /** TicketMaster API Key. */
     private static final String configPath = "resources/config.properties";
-    private static final String TMASTER_KEY = loadTicketMasterAPIKey();
+    private static final String TMASTER_KEY = loadAPIKey("ticketmasterapi.apikey");
 
-    /** Wikipedia URI */
-    private static final String WIKI_API = "http://en.wikipedia.org/w/api.php" +
-        "?action=query&list=search&srsearch=&format=json";
+    /** News URI */
+    private static final String NEWS_API = "https://newsapi.org/v2/everything?q=";
+
+    /** News API Key. */
+    private static final String NEWS_KEY = loadAPIKey("newsapi.apikey");
 
     private Stage stage;
     private Scene scene;
@@ -91,12 +97,15 @@ public class ApiApp extends Application {
     private Button[] eventsDisplayed;
     private VBox rightSide;
     private Text defaultText;
+    private Text resultText;
     private String title;
     private String descrip;
     private TextField urlField;
     private TextFlow tFLow;
     private String[] eventList;
     private String uriToPassIn;
+    private String newsUriToPassIn;
+    private ScrollPane textPane;
 
     /**
      * Constructs an {@code ApiApp} object. This default (i.e., no argument)
@@ -106,6 +115,7 @@ public class ApiApp extends Application {
         stage = null;
         scene = null;
         root = new VBox(5);
+        textPane = new ScrollPane();
         logoFrame = new ImageView();
         logo = new Image(T_MASTER);
         appDescrip = new Label("Enter a city and click on the button " +
@@ -125,6 +135,7 @@ public class ApiApp extends Application {
         descrip = "Description:";
         urlField = new TextField("Web Address");
         defaultText = new Text("Title:" + "\n\n" + "Description:" );
+        resultText = new Text();
         tFLow = new TextFlow(defaultText);
         eventList = new String[200];
     } // ApiApp
@@ -145,11 +156,21 @@ public class ApiApp extends Application {
             eventsHolder.getChildren().add(eventsDisplayed[i]);
         }
         eventsDisplayed[0].setText("No events yet...");
-        rightSide.getChildren().addAll(infoLabel, tFLow, urlField);
+        rightSide.getChildren().addAll(infoLabel, textPane, urlField);
+        tFLow.setMaxWidth(350);
+        textPane.setContent(tFLow);
+        textPane.setMaxWidth(400);
+        textPane.setPrefHeight(100);
+        textPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        textPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+        textPane.setBackground(new Background(
+            new BackgroundFill(Color.ORANGE, CornerRadii.EMPTY, Insets.EMPTY)));
         urlField.setEditable(false);
         urlField.setAlignment(Pos.CENTER);
-        rightSide.setVgrow(tFLow, Priority.ALWAYS);
+        rightSide.setVgrow(textPane, Priority.ALWAYS);
         eventsHolder.setAlignment(Pos.CENTER);
+        mainContent.setHgrow(leftSide, Priority.ALWAYS);
+        mainContent.setHgrow(rightSide, Priority.ALWAYS);
 
         // initializing root
         root.setAlignment(Pos.CENTER);
@@ -186,6 +207,11 @@ public class ApiApp extends Application {
         // setting button actions
         Runnable getEventsMethod = () -> getEventsButton();
         getEvents.setOnAction(e -> runOnNewThread(getEventsMethod));
+        eventsDisplayed[0].setOnAction(e -> firstButton());
+        eventsDisplayed[1].setOnAction(e -> secondButton());
+        eventsDisplayed[2].setOnAction(e -> thirdButton());
+        eventsDisplayed[3].setOnAction(e -> fourthButton());
+        eventsDisplayed[4].setOnAction(e -> fifthButton());
     }
 
     /** {@inheritDoc} */
@@ -198,7 +224,7 @@ public class ApiApp extends Application {
         stage.setTitle("ApiApp!");
         stage.setScene(scene);
         stage.setOnCloseRequest(event -> Platform.exit());
-        stage.setMinWidth(700);
+        stage.setMinWidth(750);
         stage.setMinHeight(350);
         stage.show();
 
@@ -207,11 +233,11 @@ public class ApiApp extends Application {
     /**
      * Method to load properties.
      */
-    private static String loadTicketMasterAPIKey () {
+    private static String loadAPIKey (String apikey) {
         try (FileInputStream configFileStream = new FileInputStream(configPath)) {
             Properties config = new Properties();
             config.load(configFileStream);
-            String tmApiKey = config.getProperty("ticketmasterapi.apikey");
+            String tmApiKey = config.getProperty(apikey);
             return tmApiKey;
         } catch (IOException ioe) {
             System.err.println(ioe);
@@ -295,25 +321,194 @@ public class ApiApp extends Application {
     }
 
     /**
-     * Method for the labels.
+     * Method for the Buttons.
      */
-/*    private void firstButton {
-        String toSearch = eventsDisplayed[0].getText();
-        for (int i = 0; i < toSearch.length(); i++) {
-            String temp = toSearch;
-            if (toSearch.charAt(i) == " ") {
-                toSearch = toSearch.substring(0, i) + "%20" + toSearch(i + 1);
+    private void firstButton() {
+        try {
+            String toSearch = eventsDisplayed[0].getText();
+            for (int i = 0; i < toSearch.length(); i++) {
+                String temp = toSearch;
+                if (toSearch.charAt(i) == ' ') {
+                    toSearch = toSearch.substring(0, i) + "%20" + toSearch.substring(i + 1);
+                }
             }
+            String newsUriToPassIn = NEWS_API + toSearch + "&apikey=" + NEWS_KEY;
+            URI newsURI = URI.create(newsUriToPassIn);
+            HttpRequest request = HttpRequest.newBuilder().uri(newsURI).build();
+            HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new IOException(response.toString());
+            }
+            String responseBody = response.body();
+            NewsResponse nResponse = GSON.fromJson(responseBody, NewsResponse.class);
+            String newsTitle = title + nResponse.articles[0].title;
+            String newsDescrip = descrip + nResponse.articles[0].description;
+            resultText.setText(newsTitle + "\n\n" + newsDescrip);
+            tFLow.getChildren().clear();
+            tFLow.getChildren().add(resultText);
+            urlField.setAlignment(Pos.CENTER_LEFT);
+            urlField.setText(nResponse.articles[0].url);
+        } catch (ArrayIndexOutOfBoundsException aioobe) {
+            String msg = "No article could be found on the event";
+            Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
+            Platform.runLater(e);
+        } catch(IOException | InterruptedException e) {
+            Runnable err = () -> alertError(newsUriToPassIn, e);
+            Platform.runLater(err);
         }
-        URI wikiURI = URI.create(toSearch);
-        HttpRequest request = HttpRequest.newBuilder().uri(wikiURI).build();
-        HttpResponse<String> response = HTTP_CLIENT.send(request, BoduHandlers.ofString());
-        if (response.statusCode() != 200) {
-            throw new IOException(response.toString());
-        }
-        String responseBody = response.body();
+    }
 
-        }*/
+    /**
+     * Method for the Buttons.
+     */
+    private void secondButton() {
+        try {
+            String toSearch = eventsDisplayed[1].getText();
+            for (int i = 0; i < toSearch.length(); i++) {
+                String temp = toSearch;
+                if (toSearch.charAt(i) == ' ') {
+                    toSearch = toSearch.substring(0, i) + "%20" + toSearch.substring(i + 1);
+                }
+            }
+            String newsUriToPassIn = NEWS_API + toSearch + "&apikey=" + NEWS_KEY;
+            URI newsURI = URI.create(newsUriToPassIn);
+            HttpRequest request = HttpRequest.newBuilder().uri(newsURI).build();
+            HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new IOException(response.toString());
+            }
+            String responseBody = response.body();
+            NewsResponse nResponse = GSON.fromJson(responseBody, NewsResponse.class);
+            String newsTitle = title + nResponse.articles[0].title;
+            String newsDescrip = descrip + nResponse.articles[0].description;
+            resultText.setText(newsTitle + "\n\n" + newsDescrip);
+            tFLow.getChildren().clear();
+            tFLow.getChildren().add(resultText);
+            urlField.setAlignment(Pos.CENTER_LEFT);
+            urlField.setText(nResponse.articles[0].url);
+        } catch (ArrayIndexOutOfBoundsException aioobe) {
+            String msg = "No article could be found on the event";
+            Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
+            Platform.runLater(e);
+        } catch(IOException | InterruptedException e) {
+            Runnable err = () -> alertError(newsUriToPassIn, e);
+            Platform.runLater(err);
+        }
+    }
+
+    /**
+     * Method for the Buttons.
+     */
+    private void thirdButton() {
+        try {
+            String toSearch = eventsDisplayed[2].getText();
+            for (int i = 0; i < toSearch.length(); i++) {
+                String temp = toSearch;
+                if (toSearch.charAt(i) == ' ') {
+                    toSearch = toSearch.substring(0, i) + "%20" + toSearch.substring(i + 1);
+                }
+            }
+            String newsUriToPassIn = NEWS_API + toSearch + "&apikey=" + NEWS_KEY;
+            URI newsURI = URI.create(newsUriToPassIn);
+            HttpRequest request = HttpRequest.newBuilder().uri(newsURI).build();
+            HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new IOException(response.toString());
+            }
+            String responseBody = response.body();
+            NewsResponse nResponse = GSON.fromJson(responseBody, NewsResponse.class);
+            String newsTitle = title + nResponse.articles[0].title;
+            String newsDescrip = descrip + nResponse.articles[0].description;
+            resultText.setText(newsTitle + "\n\n" + newsDescrip);
+            tFLow.getChildren().clear();
+            tFLow.getChildren().add(resultText);
+            urlField.setAlignment(Pos.CENTER_LEFT);
+            urlField.setText(nResponse.articles[0].url);
+        } catch (ArrayIndexOutOfBoundsException aioobe) {
+            String msg = "No article could be found on the event";
+            Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
+            Platform.runLater(e);
+        } catch(IOException | InterruptedException e) {
+            Runnable err = () -> alertError(newsUriToPassIn, e);
+            Platform.runLater(err);
+        }
+    }
+
+    /**
+     * Method for the Buttons.
+     */
+    private void fourthButton() {
+        try {
+            String toSearch = eventsDisplayed[3].getText();
+            for (int i = 0; i < toSearch.length(); i++) {
+                String temp = toSearch;
+                if (toSearch.charAt(i) == ' ') {
+                    toSearch = toSearch.substring(0, i) + "%20" + toSearch.substring(i + 1);
+                }
+            }
+            String newsUriToPassIn = NEWS_API + toSearch + "&apikey=" + NEWS_KEY;
+            URI newsURI = URI.create(newsUriToPassIn);
+            HttpRequest request = HttpRequest.newBuilder().uri(newsURI).build();
+            HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new IOException(response.toString());
+            }
+            String responseBody = response.body();
+            NewsResponse nResponse = GSON.fromJson(responseBody, NewsResponse.class);
+            String newsTitle = title + nResponse.articles[0].title;
+            String newsDescrip = descrip + nResponse.articles[0].description;
+            resultText.setText(newsTitle + "\n\n" + newsDescrip);
+            tFLow.getChildren().clear();
+            tFLow.getChildren().add(resultText);
+            urlField.setAlignment(Pos.CENTER_LEFT);
+            urlField.setText(nResponse.articles[0].url);
+        } catch (ArrayIndexOutOfBoundsException aioobe) {
+            String msg = "No article could be found on the event";
+            Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
+            Platform.runLater(e);
+        } catch(IOException | InterruptedException e) {
+            Runnable err = () -> alertError(newsUriToPassIn, e);
+            Platform.runLater(err);
+        }
+    }
+
+    /**
+     * Method for the Buttons.
+     */
+    private void fifthButton() {
+        try {
+            String toSearch = eventsDisplayed[4].getText();
+            for (int i = 0; i < toSearch.length(); i++) {
+                String temp = toSearch;
+                if (toSearch.charAt(i) == ' ') {
+                    toSearch = toSearch.substring(0, i) + "%20" + toSearch.substring(i + 1);
+                }
+            }
+            String newsUriToPassIn = NEWS_API + toSearch + "&apikey=" + NEWS_KEY;
+            URI newsURI = URI.create(newsUriToPassIn);
+            HttpRequest request = HttpRequest.newBuilder().uri(newsURI).build();
+            HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new IOException(response.toString());
+            }
+            String responseBody = response.body();
+            NewsResponse nResponse = GSON.fromJson(responseBody, NewsResponse.class);
+            String newsTitle = title + nResponse.articles[0].title;
+            String newsDescrip = descrip + nResponse.articles[0].description;
+            resultText.setText(newsTitle + "\n\n" + newsDescrip);
+            tFLow.getChildren().clear();
+            tFLow.getChildren().add(resultText);
+            urlField.setAlignment(Pos.CENTER_LEFT);
+            urlField.setText(nResponse.articles[0].url);
+        } catch (ArrayIndexOutOfBoundsException aioobe) {
+            String msg = "No article could be found on the event";
+            Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
+            Platform.runLater(e);
+        } catch(IOException | InterruptedException e) {
+            Runnable err = () -> alertError(newsUriToPassIn, e);
+            Platform.runLater(err);
+        }
+    }
 
     /**
      * Throws warning windows.
