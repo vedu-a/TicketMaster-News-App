@@ -49,8 +49,8 @@ import javafx.scene.control.ScrollPane.ScrollBarPolicy;
  */
 public class ApiApp extends Application {
 
-    /** HTTP Client */
-        public static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+    /** HTTP Client. */
+    public static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
         .version(HttpClient.Version.HTTP_2)
         .followRedirects(HttpClient.Redirect.NORMAL)
         .build();
@@ -70,10 +70,10 @@ public class ApiApp extends Application {
         "/discovery/v2/events.json?size=200";
 
     /** TicketMaster API Key. */
-    private static final String configPath = "resources/config.properties";
+    private static final String CONFIG_PATH = "resources/config.properties";
     private static final String TMASTER_KEY = loadAPIKey("ticketmasterapi.apikey");
 
-    /** News URI */
+    /** News URI. */
     private static final String NEWS_API = "https://newsapi.org/v2/everything?q=";
 
     /** News API Key. */
@@ -140,10 +140,9 @@ public class ApiApp extends Application {
         eventList = new String[200];
     } // ApiApp
 
-    /** {@inheritDox} */
+    /** Initializes app. */
     @Override
     public void init() {
-        // creating links
         root.getChildren().addAll(logoFrame, appDescrip, searchbar, labelHeaders, mainContent);
         searchbar.getChildren().addAll(textbox, getEvents);
         labelHeaders.getChildren().addAll(eventsLabel, infoLabel);
@@ -171,22 +170,14 @@ public class ApiApp extends Application {
         eventsHolder.setAlignment(Pos.CENTER);
         mainContent.setHgrow(leftSide, Priority.ALWAYS);
         mainContent.setHgrow(rightSide, Priority.ALWAYS);
-
-        // initializing root
         root.setAlignment(Pos.CENTER);
         root.setBackground(new Background(
             new BackgroundFill(Color.ORANGE, CornerRadii.EMPTY, Insets.EMPTY)));
         appDescrip.setTextFill(Color.WHITE);
-
-        // initializing logo
         logoFrame.setImage(logo);
         logoFrame.setPreserveRatio(true);
         logoFrame.setFitWidth(300);
-
-        // initializing searchbar
         searchbar.setAlignment(Pos.CENTER);
-
-        // initializing labelHeaders
         labelHeaders.setHgrow(eventsLabel, Priority.ALWAYS);
         labelHeaders.setHgrow(infoLabel, Priority.ALWAYS);
         eventsLabel.setMaxWidth(Double.MAX_VALUE);
@@ -199,12 +190,8 @@ public class ApiApp extends Application {
             new BackgroundFill(Color.BLUE, CornerRadii.EMPTY, Insets.EMPTY)));
         eventsLabel.setTextFill(Color.WHITE);
         infoLabel.setTextFill(Color.WHITE);
-
-        // initializing mainContent
         mainContent.setHgrow(leftSide, Priority.ALWAYS);
         mainContent.setHgrow(rightSide, Priority.ALWAYS);
-
-        // setting button actions
         Runnable getEventsMethod = () -> getEventsButton();
         getEvents.setOnAction(e -> runOnNewThread(getEventsMethod));
         eventsDisplayed[0].setOnAction(e -> firstButton());
@@ -232,6 +219,9 @@ public class ApiApp extends Application {
 
     /**
      * Method to load properties.
+     *
+     * @param apikey trying to retreive
+     * @return the apikey
      */
     private static String loadAPIKey (String apikey) {
         try (FileInputStream configFileStream = new FileInputStream(configPath)) {
@@ -293,6 +283,9 @@ public class ApiApp extends Application {
 
     /**
      * Filter method for events.
+     *
+     * @param eventsArray to be filtered
+     * @return filtered array
      */
     private static String[] filter (TicketMasterEvent[] eventsArray) {
         int filterIndex = 0;
@@ -352,7 +345,7 @@ public class ApiApp extends Application {
             String msg = "No article could be found on the event";
             Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
             Platform.runLater(e);
-        } catch(IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             Runnable err = () -> alertError(newsUriToPassIn, e);
             Platform.runLater(err);
         }
@@ -390,7 +383,7 @@ public class ApiApp extends Application {
             String msg = "No article could be found on the event";
             Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
             Platform.runLater(e);
-        } catch(IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             Runnable err = () -> alertError(newsUriToPassIn, e);
             Platform.runLater(err);
         }
@@ -428,7 +421,7 @@ public class ApiApp extends Application {
             String msg = "No article could be found on the event";
             Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
             Platform.runLater(e);
-        } catch(IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             Runnable err = () -> alertError(newsUriToPassIn, e);
             Platform.runLater(err);
         }
@@ -466,7 +459,7 @@ public class ApiApp extends Application {
             String msg = "No article could be found on the event";
             Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
             Platform.runLater(e);
-        } catch(IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             Runnable err = () -> alertError(newsUriToPassIn, e);
             Platform.runLater(err);
         }
@@ -504,7 +497,7 @@ public class ApiApp extends Application {
             String msg = "No article could be found on the event";
             Runnable e = () -> alertError(newsUriToPassIn, aioobe, msg);
             Platform.runLater(e);
-        } catch(IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             Runnable err = () -> alertError(newsUriToPassIn, e);
             Platform.runLater(err);
         }
@@ -512,6 +505,9 @@ public class ApiApp extends Application {
 
     /**
      * Throws warning windows.
+     *
+     * @param uri to be displayed
+     * @param msg to be displayed
      */
     public static void alertWarning(String uri, String msg) {
         TextArea text = new TextArea(uri + "\n\n" + msg);
@@ -554,7 +550,9 @@ public class ApiApp extends Application {
     }
 
     /**
-     * Runs task on new method;
+     * Runs task on new method.
+     *
+     * @param method to be ran on new thread
      */
     private void runOnNewThread(Runnable method) {
         Thread newT = new Thread(method);
