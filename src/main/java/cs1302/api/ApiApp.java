@@ -224,7 +224,7 @@ public class ApiApp extends Application {
      * @return the apikey
      */
     private static String loadAPIKey (String apikey) {
-        try (FileInputStream configFileStream = new FileInputStream(configPath)) {
+        try (FileInputStream configFileStream = new FileInputStream(CONFIG_PATH)) {
             Properties config = new Properties();
             config.load(configFileStream);
             String tmApiKey = config.getProperty(apikey);
